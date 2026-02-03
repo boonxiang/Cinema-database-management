@@ -1,0 +1,165 @@
+create table location (
+	location_id	varchar(3)   	not null,
+  	location_desc 	varchar(20) 	not null,
+   	city 		varchar(20) 	not null,
+primary key(location_id)
+);
+
+create table complex (
+   	complex_id	varchar(3)   	not null,
+  	location_id 	varchar(3) 	not null,
+   	complex_name	varchar(25) 	not null,
+primary key(complex_id),
+foreign key(location_id) references location(location_id)
+);
+
+create table hall (
+	hall_id		varchar(3)   	not null,
+	complex_id	varchar(3)   	not null,
+	hall_type	varchar(10)   	not null,
+	seat_capacity 	number(3) 	not null,
+	spec_equipment	varchar(10)   	not null,
+primary key(hall_id),
+foreign key(complex_id) references complex(complex_id)
+);
+
+create table member(
+   	member_id 	varchar(5)   	not null,
+   	first_name 	varchar(30) 	not null,
+  	last_name 	varchar(30) 	not null,
+	gender 		char(1) 	not null,
+	regdate 	date 		not null,
+	contactNo 	varchar(12) 	not null,
+	birth_date 	date 		not null,
+	member_point 	number(3) 	not null,
+primary key(member_id)
+);
+
+create table movie(
+   	movie_id	varchar(3)   	not null,
+   	movie_title 	varchar(40) 	not null,
+	movie_type 	varchar(20) 	not null,
+  	rates 		number(2,1) 	not null,
+	release_date 	date,
+	out_date 	date,
+primary key(movie_id)
+);
+
+create table ticket(
+	ticket_id 	varchar(3)   	not null,
+   	ticket_type 	varchar(10)	not null,
+  	ticket_price 	number(2)	not null,
+primary key(ticket_id)
+);
+
+create table promotion(
+	promo_id 	varchar(4)   	not null,
+ 	promo_type 	varchar(50) 	not null,
+primary key(promo_id)
+);
+
+create table food(
+  	food_id 	varchar(3)	not null,
+    	food_desc 	varchar(40)	not null,
+  	food_price 	number(2)	not null,
+	food_type	varchar(25)	not null,
+primary key(food_id)
+); 
+
+create table redemptionItem(
+	item_id 	varchar(3)   	not null,
+   	item_desc	varchar(20)   	not null,
+	item_point 	number(3) 	not null,
+primary key(item_id)
+);
+
+create table cancellation (
+	cancel_id 	varchar(4)   	not null,
+	refund_status 	varchar(10) 	not null,
+primary key(cancel_id)
+);
+
+
+
+create table Movieschedule (
+  	movieSchedule_id varchar(5)   	not null,
+   	movie_id	varchar(3) 	not null,
+	start_time 	number (2) 	not null,
+	end_time 	number (2) 	not null,
+primary key(movieSchedule_id),
+foreign key(movie_id) references movie(movie_id)
+);
+
+create table event (
+   	event_id	varchar(3)   	not null,
+   	event_desc 	varchar(50) 	not null,
+   	eventstart_time number (2) 	not null,
+	eventend_time 	number (2)	not null,
+	duration 	number (2) 	not null,
+	charge	 	number (3) 	not null,
+	member_id 	varchar(5) 	not null,
+primary key(event_id),
+foreign key(member_id) references member(member_id)
+);
+
+create table memberRenewHistory(
+	renew_id 	varchar(4)   	not null,
+   	member_id	varchar(5)   	not null,
+	renewdate 	date 		not null,
+	expiredate 	date 		not null,
+primary key(renew_id),
+foreign key(member_id) references member(member_id)
+);
+
+create table redemptionHistory(
+	redeem_id 	varchar(5)   	not null,
+   	member_id	varchar(5)   	not null,
+	item_id 	varchar(3) 	not null,
+primary key(redeem_id),
+foreign key(member_id) references member(member_id)
+);
+
+
+create table schedule (
+   	schedule_id	varchar(5)   	not null,
+   	hall_id 	varchar(3) 	not null,
+   	schedule_date 	date 		not null,
+   	event_id 	varchar(3),
+   	movieSchedule_id varchar(5),
+primary key(schedule_id),
+foreign key(event_id) references event(event_id),
+foreign key(movieSchedule_id) references movieSchedule(movieSchedule_id),
+foreign key(hall_id) references hall(hall_id)
+);
+
+create table payment(
+	payment_id 	varchar(5)   	not null,
+	member_id	varchar(5)   	not null,
+	promo_id	varchar(4),
+	cancel_id	varchar(4),
+	schedule_id	varchar(5)   	not null,
+	payment_method 	varchar(20) 	not null,
+primary key(payment_id),
+foreign key(promo_id) references promotion(promo_id),
+foreign key(cancel_id) references cancellation(cancel_id),
+foreign key(schedule_id) references schedule (schedule_id),
+foreign key(member_id) references member(member_id)
+);
+
+create table foodOrder(
+	payment_id 	varchar(5)   	not null,
+  	food_id 	varchar(3)	not null,
+	quantity 	number(2)	not null,
+primary key(payment_id,food_id),
+foreign key(payment_id) references payment(payment_id),
+foreign key(food_id) references food(food_id)
+);
+
+create table ticketDetails(
+	payment_id 	varchar(5)   	not null,
+	ticket_id 	varchar(3)   	not null,
+	ticketQuantity 	number(2)   	not null,
+primary key(payment_id,ticket_id),
+foreign key(payment_id) references payment(payment_id),
+foreign key(ticket_id) references ticket(ticket_id)
+);
