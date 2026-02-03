@@ -1,0 +1,86 @@
+SET LINESIZE 100
+SET PAGESIZE 50
+ACCEPT year NUMBER PROMPT 'Enter the year (e.g., 2021): '
+TTITLE CENTER 'Analysis of Payment Method in GCC on '&year'' SKIP 1 -
+RIGHT 'Page:' FORMAT 999 SQL.PNO SKIP 2
+COLUMN payment_method FORMAT A20 HEADING 'Payment Method'
+COLUMN payment_percentage FORMAT 999.99 HEADING 'Percentage (%)'
+WITH PaymentCounts AS (
+    SELECT
+        p.payment_method,
+        COUNT(*) AS payment_count
+    FROM
+        schedule s
+    JOIN
+        payment p ON s.schedule_id = p.schedule_id
+    WHERE
+        EXTRACT(YEAR FROM s.schedule_date) = &year
+    GROUP BY
+        p.payment_method
+)
+SELECT
+    pc.payment_method,
+    TO_CHAR((pc.payment_count * 100.0 / SUM(pc.payment_count) OVER ()), '999.99') || ' %' AS payment_percentage
+FROM
+    PaymentCounts pc;
+ACCEPT payment_method CHAR PROMPT 'Enter payment method (Cash/Online banking): '
+TTITLE CENTER 'Percentage of using &payment_method on '&year''SKIP 1- 
+RIGHT 'Page:' FORMAT 999 SQL.PNO SKIP 2
+COLUMN location_id FORMAT A15 HEADING 'LOCATION ID'
+COLUMN location_desc FORMAT A15 HEADING 'LOCATION DESC'
+COLUMN city FORMAT A15 HEADING 'City'
+WITH LocationTicketCounts AS (
+    SELECT
+        l.location_id,
+        l.location_desc,
+        l.city,
+        SUM(td.ticketQuantity) AS total_ticket_count
+    FROM
+        location l
+    JOIN
+        complex c ON l.location_id = c.location_id
+    JOIN
+        hall h ON c.complex_id = h.complex_id
+    JOIN
+        schedule s ON h.hall_id = s.hall_id
+    JOIN
+        payment p ON s.schedule_id = p.schedule_id
+    JOIN
+        ticketDetails td ON p.payment_id = td.payment_id
+    GROUP BY
+        l.location_id,
+        l.location_desc,
+        l.city
+)
+, LocationPaymentCounts AS (
+    SELECT
+        l.location_id,
+        SUM(CASE WHEN p.payment_method = '&payment_method' THEN td.ticketQuantity ELSE 0 END) AS payment_method_ticket_count
+    FROM
+        location l
+    JOIN
+        complex c ON l.location_id = c.location_id
+    JOIN
+        hall h ON c.complex_id = h.complex_id
+    JOIN
+        schedule s ON h.hall_id = s.hall_id
+    JOIN
+        payment p ON s.schedule_id = p.schedule_id
+    JOIN
+        ticketDetails td ON p.payment_id = td.payment_id
+    WHERE
+        p.payment_method = '&payment_method'
+    GROUP BY
+        l.location_id
+)
+SELECT
+    LTC.location_id,
+    LTC.location_desc,
+    LTC.city,
+    TO_CHAR((LPC.payment_method_ticket_count * 100.0 / LTC.total_ticket_count), '999.99') || ' %' AS percentage
+FROM
+    LocationTicketCounts LTC
+JOIN
+    LocationPaymentCounts LPC ON LTC.location_id = LPC.location_id
+ORDER BY
+percentage desc;

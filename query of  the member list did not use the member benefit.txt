@@ -1,0 +1,52 @@
+SET LINESIZE 70
+SET PAGESIZE 50
+
+TTITLE CENTER 'Analysis of Members Who Did Not Utilize Benefits (2020-2023)' SKIP 1 -
+RIGHT 'Page:' FORMAT 999 SQL.PNO SKIP
+COLUMN year FORMAT 99999999999 HEADING 'Year'
+COLUMN percentage FORMAT A30 HEADING 'Percentage of Members'
+
+WITH MemberCounts AS (
+    SELECT EXTRACT(YEAR FROM m.regdate) AS year, COUNT(*) AS total_members
+    FROM member m
+    WHERE EXTRACT(YEAR FROM m.regdate) BETWEEN 2020 AND 2023
+    GROUP BY EXTRACT(YEAR FROM m.regdate)
+)
+, NonUtilizingMembers AS (
+    SELECT EXTRACT(YEAR FROM m.regdate) AS year, m.member_id, m.first_name, m.last_name, m.gender, m.regdate, m.contactNo
+    FROM member m
+    LEFT JOIN payment p ON m.member_id = p.member_id
+    LEFT JOIN redemptionHistory rh ON m.member_id = rh.member_id
+    WHERE EXTRACT(YEAR FROM m.regdate) BETWEEN 2020 AND 2023
+      AND p.promo_id IS NULL
+      AND rh.item_id IS NULL
+)
+SELECT mc.year,
+       TO_CHAR((COUNT(nu.year) * 100.0 / mc.total_members), '999.99') || ' %' AS percentage
+FROM MemberCounts mc
+LEFT JOIN NonUtilizingMembers nu ON mc.year = nu.year
+GROUP BY mc.year, mc.total_members
+ORDER BY mc.year;
+
+SET LINESIZE 100
+SET PAGESIZE 50
+
+ACCEPT i_Year NUMBER PROMPT 'Enter the year (e.g., 2020): '
+ACCEPT i_Month NUMBER PROMPT 'Enter the month (1-12): '
+TTITLE CENTER 'Analysis of Members Who Did Not Utilize Benefits (' &i_Year') : 'i_Month''skip 1-
+RIGHT 'Page:' FORMAT 999 SQL.PNO SKIP 2
+COLUMN member_id FORMAT A20 TRUNCATE HEADING 'MEMBER ID';
+COLUMN first_name FORMAT A20 TRUNCATE HEADING 'FIRST NAME';
+COLUMN last_name FORMAT A25 TRUNCATE HEADING 'LAST NAME';
+COLUMN reg_date FORMAT A20 TRUNCATE HEADING 'REGISTER DATE';
+COLUMN contactNo FORMAT A15 TRUNCATE HEADING 'Contact Number';
+
+SELECT DISTINCT m.member_id, m.first_name, m.last_name, m.gender, m.regdate, m.contactNo
+FROM member m
+LEFT JOIN payment p ON m.member_id = p.member_id
+LEFT JOIN redemptionHistory rh ON m.member_id = rh.member_id
+WHERE EXTRACT(YEAR FROM m.regdate) = &i_Year
+  AND EXTRACT(MONTH FROM m.regdate) = &i_Month
+  AND p.promo_id IS NULL
+  AND rh.item_id IS NULL
+ORDER BY m.member_id;

@@ -1,0 +1,73 @@
+SET LINESIZE 60
+SET PAGESIZE 100
+ACCEPT input_year NUMBER PROMPT 'Enter the Year (e.g., 2023): '
+TTITLE CENTER 'Monthly movie schedule on '&input_year''SKIP 1 -
+RIGHT 'Page:' FORMAT 999 SQL.PNO SKIP 2
+COLUMN city FORMAT A15 HEADING 'City'
+COLUMN schedule_count FORMAT 9999 HEADING 'Schedule Count'
+COLUMN percentage FORMAT 9999.99 HEADING 'Percentage'
+WITH CityScheduleCounts AS (
+    SELECT
+        l.city,
+        COUNT(*) AS schedule_count
+    FROM
+        schedule s
+    JOIN
+        hall h ON s.hall_id = h.hall_id
+    JOIN
+        complex cp ON cp.complex_id = h.complex_id
+    JOIN
+        location l ON l.location_id = cp.location_id
+    WHERE
+        TO_NUMBER(TO_CHAR(s.schedule_date, 'YYYY')) = &input_year
+    GROUP BY
+        l.city
+)
+SELECT
+    c.city,
+    c.schedule_count,
+    TO_CHAR(c.schedule_count / SUM(c.schedule_count) OVER () * 100, '999.99') AS percentage
+FROM
+    CityScheduleCounts c
+ORDER BY
+    c.city;
+
+SET LINESIZE 170
+SET PAGESIZE 100
+ACCEPT input_month NUMBER PROMPT 'Enter the Month (1-12): '
+TTITLE CENTER 'Monthly movie schedule on '&input_year' - '&input_month'' SKIP 1-
+RIGHT 'Page:' FORMAT 999 SQL.PNO SKIP 2
+COLUMN input_month FORMAT A10 HEADING 'MONTH'
+COLUMN hall_id FORMAT A10 HEADING 'Hall ID'
+COLUMN complex_id FORMAT A10 HEADING 'COMPLEX ID'
+COLUMN movie_type FORMAT A10 HEADING 'GENRE'
+COLUMN movie_title FORMAT A30 HEADING 'TITLE'
+COLUMN schedule_date FORMAT A15 HEADING 'DATE'
+
+SELECT
+    TO_CHAR(s.schedule_date, 'DD-MON-YYYY') AS schedule_date,
+    ms.start_time,
+    ms.end_time,
+    m.movie_title,
+    m.movie_type,
+    l.location_desc,
+    cp.complex_id,
+    h.hall_id,
+    l.city
+FROM
+    schedule s
+JOIN
+    hall h ON s.hall_id = h.hall_id
+JOIN
+    complex cp ON cp.complex_id = h.complex_id
+JOIN
+    location l ON l.location_id = cp.location_id
+JOIN
+    movieSchedule ms ON ms.movieSchedule_id = s.movieSchedule_id
+JOIN
+    movie m ON m.movie_id = ms.movie_id
+WHERE
+    TO_NUMBER(TO_CHAR(s.schedule_date, 'YYYY')) = &input_year
+    AND EXTRACT(MONTH FROM s.schedule_date) = &input_month
+ORDER BY
+    schedule_date;
